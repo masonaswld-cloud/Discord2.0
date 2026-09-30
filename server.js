@@ -12,7 +12,7 @@ app.get("/", (req, res) => {
 });
 
 app.get("/timestamp", (req, res) => {
-  const { date } = req.query;
+  const date = req.query.date;
 
   if (!date) {
     return res.status(400).json({
@@ -33,7 +33,7 @@ app.get("/timestamp", (req, res) => {
 
   const [, day, month, year, hour, minute] = match;
 
-  const dt = DateTime.fromObject(
+  const dateTime = DateTime.fromObject(
     {
       year: 2000 + Number(year),
       month: Number(month),
@@ -46,14 +46,14 @@ app.get("/timestamp", (req, res) => {
     }
   );
 
-  if (!dt.isValid) {
+  if (!dateTime.isValid) {
     return res.status(400).json({
       error: "Invalid date or time"
     });
   }
 
   res.json({
-    timestamp: Math.floor(dt.toSeconds())
+    timestamp: Math.floor(dateTime.toSeconds())
   });
 });
 
