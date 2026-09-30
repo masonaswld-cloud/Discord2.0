@@ -1,4 +1,5 @@
 const express = require("express");
+const { DateTime } = require("luxon");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -16,7 +17,7 @@ app.get("/timestamp", (req, res) => {
   if (!date) {
     return res.status(400).json({
       error: "Missing date",
-      expected: "DD/MM/YY/TT"
+      expected: "DD/MM/YY/HH:MM"
     });
   }
 
@@ -26,61 +27,33 @@ app.get("/timestamp", (req, res) => {
 
   if (!match) {
     return res.status(400).json({
-      error: "Use DD/MM/YY/TT"
+      error: "Use DD/MM/YY/HH:MM"
     });
   }
 
   const [, day, month, year, hour, minute] = match;
 
-  const fullYear = 2000 + Number(year);
-
-  // Virginia = America/New_York
-  const localDate = new Date(
-    `${fullYear}-${month}-${day}T${hour}:${minute}:00`
+  const dt = DateTime.fromObject(
+    {
+      year: 2000 + Number(year),
+      month: Number(month),
+      day: Number(day),
+      hour: Number(hour),
+      minute: Number(minute)
+    },
+    {
+      zone: "America/New_York"
+    }
   );
 
-  // Get the Eastern Time offset automatically
-  const easternFormatter = new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/New_York",
-    timeZoneName: "longOffset"
-  });
-
-  const parts = easternFormatter.formatToParts(localDate);
-  const offsetPart = parts.find(
-    part => part.type === "timeZoneName"
-  );
-
-  const offset = offsetPart.value
-    .replace("GMT", "")
-    .replace(":", "");
-
-  const sign = offset.startsWith("-") ? -1 : 1;
-  const cleanOffset = offset.replace("+", "").replace("-", "");
-
-  const [offsetHours, offsetMinutes = "00"] = cleanOffset.split("");
-
-  const offsetInMinutes =
-    sign *
-    (
-      Number(cleanOffset.slice(0, 2)) * 60 +
-      Number(cleanOffset.slice(2, 4) || 0)
-    );
-
-  const utcTimestamp = Math.floor(
-    (
-      Date.UTC(
-        fullYear,
-        Number(month) - 1,
-        Number(day),
-        Number(hour),
-        Number(minute)
-      ) -
-      offsetInMinutes * 60 * 1000
-    ) / 1000
-  );
+  if (!dt.isValid) {
+    return res.status(400).json({
+      error: "Invalid date or time"
+    });
+  }
 
   res.json({
-    timestamp: utcTimestamp
+    timestamp: Math.floor(dt.toSeconds())
   });
 });
 
