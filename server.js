@@ -12,49 +12,62 @@ app.get("/", (req, res) => {
 });
 
 app.get("/timestamp", (req, res) => {
-  const date = req.query.date;
+  try {
+    let date = req.query.date;
 
-  if (!date) {
-    return res.status(400).json({
-      error: "Missing date",
-      expected: "DD/MM/YY/HH:MM"
-    });
-  }
-
-  const match = date.match(
-    /^(\d{2})\/(\d{2})\/(\d{2})\/(\d{2}):(\d{2})$/
-  );
-
-  if (!match) {
-    return res.status(400).json({
-      error: "Use DD/MM/YY/HH:MM"
-    });
-  }
-
-  const [, day, month, year, hour, minute] = match;
-
-  const dateTime = DateTime.fromObject(
-    {
-      year: 2000 + Number(year),
-      month: Number(month),
-      day: Number(day),
-      hour: Number(hour),
-      minute: Number(minute)
-    },
-    {
-      zone: "America/New_York"
+    if (!date) {
+      return res.status(400).json({
+        error: "Missing date",
+        expected: "DD/MM/YY/HH:MM"
+      });
     }
-  );
 
-  if (!dateTime.isValid) {
-    return res.status(400).json({
-      error: "Invalid date or time"
+    date = String(date).trim();
+
+    const match = date.match(
+      /^(\d{2})\/(\d{2})\/(\d{2})\/(\d{2}):(\d{2})$/
+    );
+
+    if (!match) {
+      return res.status(400).json({
+        error: "Use DD/MM/YY/HH:MM",
+        received: date
+      });
+    }
+
+    const [, day, month, year, hour, minute] = match;
+
+    const dateTime = DateTime.fromObject(
+      {
+        year: 2000 + Number(year),
+        month: Number(month),
+        day: Number(day),
+        hour: Number(hour),
+        minute: Number(minute)
+      },
+      {
+        zone: "America/New_York"
+      }
+    );
+
+    if (!dateTime.isValid) {
+      return res.status(400).json({
+        error: "Invalid date or time",
+        details: dateTime.invalidReason
+      });
+    }
+
+    res.json({
+      timestamp: Math.floor(dateTime.toSeconds())
+    });
+
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      error: "Internal Server Error"
     });
   }
-
-  res.json({
-    timestamp: Math.floor(dateTime.toSeconds())
-  });
 });
 
 app.listen(PORT, () => {
