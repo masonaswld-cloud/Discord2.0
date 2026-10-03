@@ -1,3 +1,4 @@
+
 const express = require("express");
 const { DateTime } = require("luxon");
 
@@ -9,6 +10,7 @@ app.get("/", (req, res) => {
   res.json({
     status: "online",
     service: "Timestamp API",
+    timezone: TIMEZONE,
     format: "DD/MM/YY/HH:MM"
   });
 });
@@ -16,48 +18,37 @@ app.get("/", (req, res) => {
 app.get("/timestamp", (req, res) => {
   let input = req.query.date || req.query.input;
 
-  if (Array.isArray(input)) {
-    input = input[0];
-  }
+  if (Array.isArray(input)) input = input[0];
 
   if (typeof input !== "string" || !input.trim()) {
-    return res.status(400).json({
-      error: "Missing date",
-      expected: "DD/MM/YY/HH:MM"
+    return res.json({
+      error: "Please enter a date in DD/MM/YY/HH:MM format."
     });
   }
 
-  input = input.trim();
-
-  // Handle BotGhost accidentally sending the same date twice.
-  const parts = input.split(",");
-  if (parts.every(part => part.trim() === parts[0].trim())) {
-    input = parts[0].trim();
-  }
-
   const date = DateTime.fromFormat(
-    input,
+    input.trim(),
     "dd/MM/yy/HH:mm",
     { zone: TIMEZONE, locale: "en-GB" }
   );
 
   if (!date.isValid) {
-    return res.status(400).json({
-      error: "Invalid date",
-      received: input,
-      expected: "DD/MM/YY/HH:MM"
+    return res.json({
+      error: "Invalid date. Use DD/MM/YY/HH:MM."
     });
   }
 
+  const timestamp = Math.floor(date.toSeconds());
+
   return res.json({
-    timestamp: Math.floor(date.toSeconds()),
+    timestamp,
     date: date.toFormat("dd/MM/yy HH:mm"),
     timezone: TIMEZONE,
     discord: {
-      time: `<t:${Math.floor(date.toSeconds())}:t>`,
-      date: `<t:${Math.floor(date.toSeconds())}:D>`,
-      full: `<t:${Math.floor(date.toSeconds())}:F>`,
-      relative: `<t:${Math.floor(date.toSeconds())}:R>`
+      time: `<t:${timestamp}:t>`,
+      date: `<t:${timestamp}:D>`,
+      full: `<t:${timestamp}:F>`,
+      relative: `<t:${timestamp}:R>`
     }
   });
 });
