@@ -7,7 +7,7 @@ const PORT = process.env.PORT || 3000;
 const TIMEZONE = "America/New_York";
 
 app.get("/", (req, res) => {
-  res.json({
+  res.status(200).json({
     status: "online",
     service: "Timestamp API",
     timezone: TIMEZONE,
@@ -21,7 +21,7 @@ app.get("/timestamp", (req, res) => {
   if (Array.isArray(input)) input = input[0];
 
   if (typeof input !== "string" || !input.trim()) {
-    return res.json({
+    return res.status(200).json({
       error: "Please enter a date in DD/MM/YY/HH:MM format."
     });
   }
@@ -33,15 +33,15 @@ app.get("/timestamp", (req, res) => {
   );
 
   if (!date.isValid) {
-    return res.json({
+    return res.status(200).json({
       error: "Invalid date. Use DD/MM/YY/HH:MM."
     });
   }
 
   const timestamp = Math.floor(date.toSeconds());
 
-  return res.json({
-    timestamp,
+  return res.status(200).json({
+    timestamp: timestamp,
     date: date.toFormat("dd/MM/yy HH:mm"),
     timezone: TIMEZONE,
     discord: {
