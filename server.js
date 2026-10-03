@@ -3,59 +3,62 @@ const { DateTime } = require("luxon");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const TIMEZONE = "America/New_York";
 
 app.get("/", (req, res) => {
   res.json({
     status: "online",
-    message: "Timestamp API is running"
+    service: "Timestamp API",
+    format: "DD/MM/YY/HH:MM"
   });
 });
 
 app.get("/timestamp", (req, res) => {
-  const input = String(req.query.date || "").trim();
+  let input = req.query.date || req.query.input;
 
-  if (!input) {
+  if (Array.isArray(input)) {
+    input = input[0];
+  }
+
+  if (typeof input !== "string" || !input.trim()) {
     return res.status(400).json({
       error: "Missing date",
       expected: "DD/MM/YY/HH:MM"
     });
   }
 
-  const match = input.match(
-    /^(\d{2})\/(\d{2})\/(\d{2})\/(\d{2}):(\d{2})$/
-  );
+  input = input.trim();
 
-  if (!match) {
-    return res.status(400).json({
-      error: "Use DD/MM/YY/HH:MM",
-      received: input
-    });
+  // Handle BotGhost accidentally sending the same date twice.
+  const parts = input.split(",");
+  if (parts.every(part => part.trim() === parts[0].trim())) {
+    input = parts[0].trim();
   }
 
-  const [, day, month, year, hour, minute] = match;
-
-  const dateTime = DateTime.fromObject(
-    {
-      year: 2000 + Number(year),
-      month: Number(month),
-      day: Number(day),
-      hour: Number(hour),
-      minute: Number(minute)
-    },
-    {
-      zone: "America/New_York"
-    }
+  const date = DateTime.fromFormat(
+    input,
+    "dd/MM/yy/HH:mm",
+    { zone: TIMEZONE, locale: "en-GB" }
   );
 
-  if (!dateTime.isValid) {
+  if (!date.isValid) {
     return res.status(400).json({
-      error: "Invalid date or time",
-      details: dateTime.invalidReason
+      error: "Invalid date",
+      received: input,
+      expected: "DD/MM/YY/HH:MM"
     });
   }
 
   return res.json({
-    timestamp: Math.floor(dateTime.toSeconds())
+    timestamp: Math.floor(date.toSeconds()),
+    date: date.toFormat("dd/MM/yy HH:mm"),
+    timezone: TIMEZONE,
+    discord: {
+      time: `<t:${Math.floor(date.toSeconds())}:t>`,
+      date: `<t:${Math.floor(date.toSeconds())}:D>`,
+      full: `<t:${Math.floor(date.toSeconds())}:F>`,
+      relative: `<t:${Math.floor(date.toSeconds())}:R>`
+    }
   });
 });
 
