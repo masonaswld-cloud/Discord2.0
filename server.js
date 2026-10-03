@@ -1,58 +1,29 @@
 
-const express = require("express");
-const { DateTime } = require("luxon");
-
-const app = express();
-const PORT = process.env.PORT || 3000;
-const TIMEZONE = "America/New_York";
-
-app.get("/", (req, res) => {
-  res.status(200).json({
-    status: "online",
-    service: "Timestamp API",
-    timezone: TIMEZONE,
-    format: "DD/MM/YY/HH:MM"
-  });
-});
-
 app.get("/timestamp", (req, res) => {
-  let input = req.query.date || req.query.input;
-
-  if (Array.isArray(input)) input = input[0];
-
-  if (typeof input !== "string" || !input.trim()) {
-    return res.status(200).json({
-      error: "Please enter a date in DD/MM/YY/HH:MM format."
-    });
-  }
+  const input = String(req.query.date || req.query.input || "").trim();
 
   const date = DateTime.fromFormat(
-    input.trim(),
+    input,
     "dd/MM/yy/HH:mm",
-    { zone: TIMEZONE, locale: "en-GB" }
+    { zone: "America/New_York", locale: "en-GB" }
   );
 
-  if (!date.isValid) {
-    return res.status(200).json({
-      error: "Invalid date. Use DD/MM/YY/HH:MM."
-    });
-  }
-
-  const timestamp = Math.floor(date.toSeconds());
+  const timestamp = date.isValid
+    ? Math.floor(date.toSeconds())
+    : null;
 
   return res.status(200).json({
+    entered_date: input,
+    actual_date: date.isValid
+      ? date.toFormat("dd/MM/yy HH:mm")
+      : input,
     timestamp: timestamp,
-    date: date.toFormat("dd/MM/yy HH:mm"),
-    timezone: TIMEZONE,
-    discord: {
+    timezone: "America/New_York",
+    discord: date.isValid ? {
       time: `<t:${timestamp}:t>`,
       date: `<t:${timestamp}:D>`,
       full: `<t:${timestamp}:F>`,
       relative: `<t:${timestamp}:R>`
-    }
+    } : null
   });
-});
-
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Timestamp API running on port ${PORT}`);
 });
