@@ -1,14 +1,12 @@
 {
-  "name": "discord-timestamp-api",
+  "name": "timestamp-api",
   "version": "1.0.0",
-  "description": "Discord timestamp API using Virginia time",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
-    "express": "^4.21.2",
-    "luxon": "^3.5.0"
+    "express": "^5.1.0",
+    "luxon": "^3.0.0"
   }
 }
-
