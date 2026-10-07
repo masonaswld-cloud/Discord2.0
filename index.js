@@ -1,7 +1,7 @@
 const express = require('express');
 const app = express();
 
-function formatNYDate(date) {
+function getNewYorkParts(date) {
   const formatter = new Intl.DateTimeFormat('en-GB', {
     timeZone: 'America/New_York',
     day: '2-digit',
@@ -30,40 +30,73 @@ function formatNYDate(date) {
   };
 }
 
+function getUnixNY(date) {
+  return Math.floor(
+    new Date(date.toLocaleString('en-US', { timeZone: 'America/New_York' })).getTime() / 1000
+  );
+}
+
 function formatDateOnly(date) {
-  const ny = formatNYDate(date);
+  const ny = getNewYorkParts(date);
   return `${ny.day}/${ny.month}/${ny.year}`;
 }
 
 function formatTimeOnly(date) {
-  const ny = formatNYDate(date);
+  const ny = getNewYorkParts(date);
   return `${ny.hour}:${ny.minute}`;
 }
 
 function formatDateThenTime(date) {
-  const ny = formatNYDate(date);
+  const ny = getNewYorkParts(date);
   return `${ny.day}/${ny.month}/${ny.year}/${ny.hour}:${ny.minute}`;
 }
 
 function formatFullDateTime(date) {
-  const ny = formatNYDate(date);
+  const ny = getNewYorkParts(date);
   return `${ny.day}/${ny.month}/${ny.year} ${ny.hour}:${ny.minute}`;
 }
 
-app.get('/api/option_time', (req, res) => {
-  res.json({ option_time: formatTimeOnly(new Date()) });
+app.get('/api/option_date', (req, res) => {
+  const now = new Date();
+  const unix = getUnixNY(now);
+
+  res.json({
+    option_date: formatDateThenTime(now),
+    option_date_only: formatDateOnly(now),
+    option_time: formatTimeOnly(now),
+    option_datetime: formatFullDateTime(now),
+    unix
+  });
 });
 
-app.get('/api/option_date', (req, res) => {
-  res.json({ option_date: formatDateThenTime(new Date()) });
+app.get('/api/option_time', (req, res) => {
+  const now = new Date();
+  const unix = getUnixNY(now);
+
+  res.json({
+    option_time: formatTimeOnly(now),
+    unix
+  });
 });
 
 app.get('/api/option_datetime', (req, res) => {
-  res.json({ option_datetime: formatFullDateTime(new Date()) });
+  const now = new Date();
+  const unix = getUnixNY(now);
+
+  res.json({
+    option_datetime: formatFullDateTime(now),
+    unix
+  });
 });
 
 app.get('/api/option_date_only', (req, res) => {
-  res.json({ option_date_only: formatDateOnly(new Date()) });
+  const now = new Date();
+  const unix = getUnixNY(now);
+
+  res.json({
+    option_date_only: formatDateOnly(now),
+    unix
+  });
 });
 
 app.get('/', (req, res) => {
