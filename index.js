@@ -36,66 +36,21 @@ function getUnixNY(date) {
   );
 }
 
-function formatDateOnly(date) {
-  const ny = getNewYorkParts(date);
-  return `${ny.day}/${ny.month}/${ny.year}`;
-}
-
-function formatTimeOnly(date) {
-  const ny = getNewYorkParts(date);
-  return `${ny.hour}:${ny.minute}`;
-}
-
-function formatDateThenTime(date) {
-  const ny = getNewYorkParts(date);
-  return `${ny.day}/${ny.month}/${ny.year}/${ny.hour}:${ny.minute}`;
-}
-
-function formatFullDateTime(date) {
-  const ny = getNewYorkParts(date);
-  return `${ny.day}/${ny.month}/${ny.year} ${ny.hour}:${ny.minute}`;
-}
-
 app.get('/api/option_date', (req, res) => {
   const now = new Date();
-  const unix = getUnixNY(now);
+  const ny = getNewYorkParts(now);
+
+  const option_date = `${ny.day}/${ny.month}/${ny.year}/${ny.hour}:${ny.minute}`;
+  const option_time = `${ny.hour}:${ny.minute}`;
+  const option_datetime = `${ny.day}/${ny.month}/${ny.year} ${ny.hour}:${ny.minute}`;
+  const option_date_only = `${ny.day}/${ny.month}/${ny.year}`;
 
   res.json({
-    option_date: formatDateThenTime(now),
-    option_date_only: formatDateOnly(now),
-    option_time: formatTimeOnly(now),
-    option_datetime: formatFullDateTime(now),
-    unix
-  });
-});
-
-app.get('/api/option_time', (req, res) => {
-  const now = new Date();
-  const unix = getUnixNY(now);
-
-  res.json({
-    option_time: formatTimeOnly(now),
-    unix
-  });
-});
-
-app.get('/api/option_datetime', (req, res) => {
-  const now = new Date();
-  const unix = getUnixNY(now);
-
-  res.json({
-    option_datetime: formatFullDateTime(now),
-    unix
-  });
-});
-
-app.get('/api/option_date_only', (req, res) => {
-  const now = new Date();
-  const unix = getUnixNY(now);
-
-  res.json({
-    option_date_only: formatDateOnly(now),
-    unix
+    option_date,
+    option_time,
+    option_datetime,
+    option_date_only,
+    unix: getUnixNY(now)
   });
 });
 
