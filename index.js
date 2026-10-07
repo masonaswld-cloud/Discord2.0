@@ -1,64 +1,88 @@
-const express = require('express');
+const express = require("express");
 const app = express();
 
-function getNewYorkParts(date) {
-  const formatter = new Intl.DateTimeFormat('en-GB', {
-    timeZone: 'America/New_York',
-    day: '2-digit',
-    month: '2-digit',
-    year: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false
+const PORT = process.env.PORT || 10000;
+const TZ = "America/New_York";
+
+function parseDate(input) {
+  const m = String(input).match(
+    /^(\d{2})\/(\d{2})\/(\d{2})\/(\d{2}):(\d{2})$/
+  );
+  if (!m) return null;
+
+  const [, d, mo, y, h, mi] = m;
+  const year = 2000 + +y;
+
+  // Create UTC date, then find New York's offset.
+  const temp = new Date(Date.UTC(year, +mo - 1, +d, +h, +mi));
+
+  const offset = new Intl.DateTimeFormat("en-US", {
+    timeZone: TZ,
+    timeZoneName: "shortOffset"
+  }).formatToParts(temp)
+    .find(x => x.type === "timeZoneName")?.value || "GMT-5";
+
+  const hours = offset.includes("-04") ? -4 : -5;
+  const date = new Date(Date.UTC(
+    year, +mo - 1, +d, +h - hours, +mi
+  ));
+
+  return isNaN(date) ? null : date;
+}
+
+app.get("/", (req, res) => {
+  res.json({
+    status: "online",
+    service: "Timestamp API",
+    timezone: TZ,
+    format: "DD/MM/YY/HH:MM"
   });
+});
 
-  const parts = formatter.formatToParts(date);
-  const values = {};
+app.get("/timestamp", (req, res) => {
+  const input = Array.isArray(req.query.date)
+    ? req.query.date[0]
+    : String(req.query.date || "").trim();
 
-  for (const part of parts) {
-    if (part.type !== 'literal') {
-      values[part.type] = part.value;
-    }
+  const date = parseDate(input);
+
+  if (!date || input === "{option_date}") {
+    return res.status(200).json({
+      entered_date: input,
+      actual_date: "",
+      timestamp: null,
+      timezone: TZ,
+      message: "Enter a date in DD/MM/YY/HH:MM format."
+    });
   }
 
-  return {
-    day: values.day,
-    month: values.month,
-    year: values.year,
-    hour: values.hour,
-    minute: values.minute
-  };
-}
+  const timestamp = Math.floor(date.getTime() / 1000);
 
-function getUnixNY(date) {
-  return Math.floor(
-    new Date(date.toLocaleString('en-US', { timeZone: 'America/New_York' })).getTime() / 1000
-  );
-}
-
-app.get('/api/option_date', (req, res) => {
-  const now = new Date();
-  const ny = getNewYorkParts(now);
-
-  const option_date = `${ny.day}/${ny.month}/${ny.year}/${ny.hour}:${ny.minute}`;
-  const option_time = `${ny.hour}:${ny.minute}`;
-  const option_datetime = `${ny.day}/${ny.month}/${ny.year} ${ny.hour}:${ny.minute}`;
-  const option_date_only = `${ny.day}/${ny.month}/${ny.year}`;
+  const actual = new Intl.DateTimeFormat("en-GB", {
+    timeZone: TZ,
+    day: "2-digit",
+    month: "2-digit",
+    year: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  }).format(date).replace(",", "");
 
   res.json({
-    option_date,
-    option_time,
-    option_datetime,
-    option_date_only,
-    unix: getUnixNY(now)
+    entered_date: input,
+    actual_date: actual,
+    timestamp,
+    timezone: TZ,
+    message: "Timestamp created successfully.",
+    discord: {
+      time: `<t:${timestamp}:t>`,
+      date: `<t:${timestamp}:D>`,
+      full: `<t:${timestamp}:F>`,
+      relative: `<t:${timestamp}:R>`
+    }
   });
 });
 
-app.get('/', (req, res) => {
-  res.json({ message: 'Timestamp API is running' });
-});
-
-const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Timestamp API running on port ${PORT}`);
 });
