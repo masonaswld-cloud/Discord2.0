@@ -1,36 +1,43 @@
 const express = require('express');
 const app = express();
 
-function formatDate(date) {
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const year = String(date.getFullYear()).slice(-2);
-  return `${day}/${month}/${year}`;
+function getNewYorkDate(date) {
+  const formatter = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'America/New_York',
+    day: '2-digit',
+    month: '2-digit',
+    year: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  });
+
+  const parts = formatter.formatToParts(date);
+  const values = {};
+
+  for (const part of parts) {
+    if (part.type !== 'literal') {
+      values[part.type] = part.value;
+    }
+  }
+
+  return {
+    day: values.day,
+    month: values.month,
+    year: values.year,
+    hour: values.hour,
+    minute: values.minute
+  };
 }
 
-function formatTime(date) {
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  return `${hours}:${minutes}`;
-}
-
-function formatDateTime(date) {
-  return `${formatDate(date)} ${formatTime(date)}`;
-}
-
-function formatDateWithTime(date) {
-  return `${formatDate(date)}/${formatTime(date)}`;
-}
-
-// Single combined response
 app.get('/api/option_date', (req, res) => {
   const now = new Date();
+  const ny = getNewYorkDate(now);
+
+  const optionDate = `${ny.day}/${ny.month}/${ny.year}/${ny.hour}:${ny.minute}`;
 
   res.json({
-    option_date: formatDateWithTime(now),
-    option_time: formatTime(now),
-    option_datetime: formatDateTime(now),
-    unix: Math.floor(now.getTime() / 1000)
+    option_date: optionDate
   });
 });
 
@@ -39,6 +46,6 @@ app.get('/', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => { 
-  console.log(`Server running on port ${PORT}`); 
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
