@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timestamp Generator - Discord</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 28px;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: #7f8c8d;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .input-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            color: #2c3e50;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+            font-family: 'Courier New', monospace;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .format-hint {
+            color: #95a5a6;
+            font-size: 12px;
+            margin-top: 5px;
+            font-family: 'Courier New', monospace;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-bottom: 20px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .results {
+            display: none;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            border-left: 4px solid #667eea;
+        }
+
+        .results.show {
+            display: block;
+        }
+
+        .result-item {
+            margin-bottom: 15px;
+        }
+
+        .result-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .result-label {
+            color: #7f8c8d;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .result-value {
+            background: white;
+            padding: 10px 12px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            color: #2c3e50;
+            word-break: break-all;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .copy-btn {
+            background: #e0e0e0;
+            color: #2c3e50;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+            width: auto;
+            margin: 0;
+        }
+
+        .copy-btn:hover {
+            background: #d0d0d0;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .error {
+            color: #e74c3c;
+            background: #fadbd8;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            display: none;
+            border-left: 4px solid #e74c3c;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .discord-formats {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .discord-formats h3 {
+            color: #2c3e50;
+            font-size: 13px;
+            margin-bottom: 10px;
+        }
+
+        .discord-item {
+            margin-bottom: 10px;
+        }
+
+        .success-message {
+            color: #27ae60;
+            font-size: 12px;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .success-message.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Discord Timestamp Generator</h1>
+        <p class="subtitle">Convert dates to Unix timestamps for Discord</p>
+
+        <div class="input-group">
+            <label for="dateInput">Enter Date & Time</label>
+            <input 
+                type="text" 
+                id="dateInput" 
+                placeholder="25/12/24/14:30"
+                autocomplete="off"
+            >
+            <div class="format-hint">Format: DD/MM/YY/HH:MM (e.g., 25/12/24/14:30)</div>
+        </div>
+
+        <button onclick="generateTimestamp()">Generate Timestamp</button>
+
+        <div class="error" id="errorMessage"></div>
+
+        <div class="results" id="results">
+            <div class="result-item">
+                <div class="result-label">Entered Date</div>
+                <div class="result-value">
+                    <span id="enteredDate"></span>
+                </div>
+            </div>
+
+            <div class="result-item">
+                <div class="result-label">Actual Date (Processed)</div>
+                <div class="result-value">
+                    <span id="actualDate"></span>
+                </div>
+            </div>
+
+            <div class="result-item">
+                <div class="result-label">Unix Timestamp</div>
+                <div class="result-value">
+                    <span id="timestamp"></span>
+                    <button class="copy-btn" onclick="copyToClipboard('timestamp')">Copy</button>
+                </div>
+                <div class="success-message" id="copyMessage1">Copied!</div>
+            </div>
+
+            <div class="discord-formats">
+                <h3>Discord Formatting Tags</h3>
+
+                <div class="discord-item">
+                    <div class="result-label">Full Format</div>
+                    <div class="result-value">
+                        <span id="discord-full"></span>
+                        <button class="copy-btn" onclick="copyToClipboard('discord-full')">Copy</button>
+                    </div>
+                    <div class="success-message" id="copyMessage2">Copied!</div>
+                </div>
+
+                <div class="discord-item">
+                    <div class="result-label">Date Only</div>
+                    <div class="result-value">
+                        <span id="discord-date"></span>
+                        <button class="copy-btn" onclick="copyToClipboard('discord-date')">Copy</button>
+                    </div>
+                    <div class="success-message" id="copyMessage3">Copied!</div>
+                </div>
+
+                <div class="discord-item">
+                    <div class="result-label">Time Only</div>
+                    <div class="result-value">
+                        <span id="discord-time"></span>
+                        <button class="copy-btn" onclick="copyToClipboard('discord-time')">Copy</button>
+                    </div>
+                    <div class="success-message" id="copyMessage4">Copied!</div>
+                </div>
+
+                <div class="discord-item">
+                    <div class="result-label">Relative Time</div>
+                    <div class="result-value">
+                        <span id="discord-relative"></span>
+                        <button class="copy-btn" onclick="copyToClipboard('discord-relative')">Copy</button>
+                    </div>
+                    <div class="success-message" id="copyMessage5">Copied!</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const dateInput = document.getElementById('dateInput');
+
+        // Allow Enter key to generate timestamp
+        dateInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                generateTimestamp();
+            }
+        });
+
+        async function generateTimestamp() {
+            const date = dateInput.value.trim();
+            const errorDiv = document.getElementById('errorMessage');
+            const resultsDiv = document.getElementById('results');
+
+            // Reset error
+            errorDiv.classList.remove('show');
+            errorDiv.textContent = '';
+
+            if (!date) {
+                errorDiv.textContent = 'Please enter a date in the format DD/MM/YY/HH:MM';
+                errorDiv.classList.add('show');
+                resultsDiv.classList.remove('show');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/timestamp?date=${encodeURIComponent(date)}`);
+                const data = await response.json();
+
+                if (!data.timestamp) {
+                    errorDiv.textContent = 'Invalid date format. Please use DD/MM/YY/HH:MM (e.g., 25/12/24/14:30)';
+                    errorDiv.classList.add('show');
+                    resultsDiv.classList.remove('show');
+                    return;
+                }
+
+                // Populate results
+                document.getElementById('enteredDate').textContent = data.entered_date;
+                document.getElementById('actualDate').textContent = data.actual_date;
+                document.getElementById('timestamp').textContent = data.timestamp;
+                document.getElementById('discord-full').textContent = data.discord.full;
+                document.getElementById('discord-date').textContent = data.discord.date;
+                document.getElementById('discord-time').textContent = data.discord.time;
+                document.getElementById('discord-relative').textContent = data.discord.relative;
+
+                // Show results
+                resultsDiv.classList.add('show');
+                errorDiv.classList.remove('show');
+
+            } catch (error) {
+                errorDiv.textContent = 'Error connecting to API. Please try again.';
+                errorDiv.classList.add('show');
+                resultsDiv.classList.remove('show');
+            }
+        }
+
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            const text = element.textContent;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                const messageId = `copyMessage${elementId.charCodeAt(elementId.length - 1) - 47}`;
+                const messageEl = document.getElementById(messageId);
+                if (messageEl) {
+                    messageEl.classList.add('show');
+                    setTimeout(() => {
+                        messageEl.classList.remove('show');
+                    }, 2000);
+                }
+            });
+        }
+    </script>
+</body>
+</html>
