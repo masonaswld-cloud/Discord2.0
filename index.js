@@ -6,14 +6,14 @@ const TZ = "America/New_York";
 
 function parseDate(input) {
   const m = String(input).match(
-    /^(\d{2})\/(\d{2})\/(\d{2})\/(\d{2}):(\d{2})$/
+    /^(
+\d{2})\/(\d{2})\/(\d{2})\/(\d{2}):(\d{2})$/
   );
   if (!m) return null;
 
   const [, d, mo, y, h, mi] = m;
   const year = 2000 + +y;
 
-  // Create UTC date, then find New York's offset.
   const temp = new Date(Date.UTC(year, +mo - 1, +d, +h, +mi));
 
   const offset = new Intl.DateTimeFormat("en-US", {
@@ -46,7 +46,7 @@ app.get("/timestamp", (req, res) => {
 
   const date = parseDate(input);
 
-  if (!date || input === "{option_date}") {
+  if (!date || !input) {
     return res.status(200).json({
       entered_date: input,
       actual_date: "",
