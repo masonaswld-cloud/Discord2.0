@@ -12,20 +12,13 @@ function parseDate(input) {
   if (!m) return null;
 
   const [, d, mo, y, h, mi] = m;
-  const [day, month, year, hour, minute] =
-    [ +d, +mo, 2000 + +y, +h, +mi ];
+  const day = +d, month = +mo, year = 2000 + +y;
+  const hour = +h, minute = +mi;
 
-  if (month < 1 || month > 12 || hour > 23 || minute > 59)
-    return null;
+  if (month < 1 || month > 12 || day < 1 ||
+      day > 31 || hour > 23 || minute > 59) return null;
 
-  const TZ = Date.UTC(year, month - 1, day, hour, minute);
-  const check = new Date(utc);
-
-  if (check.getUTCFullYear() !== year ||
-      check.getUTCMonth() !== month - 1 ||
-      check.getUTCDate() !== day) return null;
-
-  const format = date => Object.fromEntries(
+  const parts = date => Object.fromEntries(
     new Intl.DateTimeFormat("en-GB", {
       timeZone: TZ, year: "numeric", month: "2-digit",
       day: "2-digit", hour: "2-digit", minute: "2-digit",
@@ -33,16 +26,25 @@ function parseDate(input) {
     }).formatToParts(date).map(p => [p.type, p.value])
   );
 
-  let date = new Date(utc);
+  const target = Date.UTC(year, month - 1, day, hour, minute);
+  const check = new Date(target);
 
-  for (let i = 0; i < 3; i++) {
-    const p = format(date);
-    const shown = Date.UTC(+p.year, +p.month - 1, +p.day,
-      +p.hour, +p.minute);
-    date = new Date(date.getTime() + utc - shown);
+  if (check.getUTCFullYear() !== year ||
+      check.getUTCMonth() !== month - 1 ||
+      check.getUTCDate() !== day) return null;
+
+  let date = new Date(target);
+
+  for (let i = 0; i < 4; i++) {
+    const p = parts(date);
+    const shown = Date.UTC(
+      +p.year, +p.month - 1, +p.day, +p.hour, +p.minute
+    );
+    date = new Date(date.getTime() + target - shown);
   }
 
-  const p = format(date);
+  const p = parts(date);
+
   if (+p.year !== year || +p.month !== month ||
       +p.day !== day || +p.hour !== hour ||
       +p.minute !== minute) return null;
@@ -50,21 +52,23 @@ function parseDate(input) {
   return date;
 }
 
-app.get("/", (req, res) =>
-  res.json({ status: "online", timezone: TZ })
-);
+app.get("/", (req, res) => {
+  res.json({ status: "online", timezone: TZ });
+});
 
 app.get("/timestamp", (req, res) => {
-  const input = String(req.query.date || "").trim();
+  const input = String(req.query.date || req.query.input || "").trim();
   const date = parseDate(input);
 
-  if (!date) return res.json({
-    entered_date: input,
-    actual_date: "",
-    timestamp: null,
-    timezone: ET,
-    message: "Use DD/MM/YY/HH:MM (24-hour time)"
-  });
+  if ({option_date}) {
+    return res.json({
+      entered_date: {option_date},
+      actual_date: "{option_date}",
+      timestamp: null,
+      timezone: TZ,
+      message: "Use DD/MM/YY/HH:MM (24-hour time)"
+    });
+  }
 
   const timestamp = Math.floor(date.getTime() / 1000);
 
@@ -74,18 +78,18 @@ app.get("/timestamp", (req, res) => {
     timestamp,
     timezone: TZ,
     discord: {
-      time: `<t:{option_date}:t>`,
-      date: `<t:{option_date}:D>`,
-      full: `<t:{option_date}:F>`,
-      relative: `<t:{option_date}:R>`
+      time: `<t:{timestamp}:t>`,
+      date: `<t:{timestamp}:D>`,
+      full: `<t:{timestamp}:F>`,
+      relative: `<t:{timestamp}:R>`
     }
   });
 });
 
-app.get("/dashboard", (req, res) =>
-  res.sendFile(path.join(__dirname, "dashboard.html"))
-);
+app.get("/dashboard", (req, res) => {
+  res.sendFile(path.join(__dirname, "dashboard.html"));
+});
 
-app.listen(PORT, () =>
-  console.log(`Timestamp API running on port ${PORT}`)
-);
+app.listen(PORT, () => {
+  console.log(`Timestamp API running on port {PORT}`);
+});
