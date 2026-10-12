@@ -1,67 +1,40 @@
-
 const express = require("express");
-
 const app = express();
+
 const PORT = process.env.PORT || 10000;
 
 app.get("/", (req, res) => {
-  res.json({
-    status: "online",
-    message: "Discord Blog API is running"
-  });
+  res.json({ status: "online", message: "API is running" });
 });
 
 app.get("/discord-updates", async (req, res) => {
   try {
-    const response = await fetch("https://discord.com/blog");
-    if (!response.ok) {
-      throw new Error("Discord blog request failed");
-    }
+    const r = await fetch("https://discord.com/blog");
+    if (!r.ok) throw new Error("Discord returned " + r.status);
 
-    const html = await response.text();
+    const html = await r.text();
+    const match = html.match(
+      /https:\/\/discord\.com\/blog\/([a-zA-Z0-9-]+)/
+    );
 
-    const matches = [
-      ...html.matchAll(
-        /<a[^>]+href="(\/blog\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/gi
-      )
-    ];
+    if (!match) throw new Error("No blog post found");
 
-    const seen = new Set();
-    const items = [];
-
-    for (const match of matches) {
-      const link = "https://discord.com" + match[1];
-      const title = match[2].replace(/<[^>]*>/g, "")
-        .replace(/&amp;/g, "&")
-        .replace(/&#x27;|&#39;/g, "'")
-        .replace(/&quot;/g, '"')
-        .trim();
-
-      if (title && !seen.has(link)) {
-        seen.add(link);
-        items.push({ title, link });
-      }
-    }
-
-    if (!items.length) {
-      throw new Error("No blog posts found");
-    }
+    const slug = match[1];
+    const title = slug
+      .replace(/-/g, " ")
+      .replace(/\b\w/g, c => c.toUpperCase());
 
     res.json({
       status: "ok",
-      count: items.length,
-      title: items[0].title,
-      link: items[0].link,
-      items
+      title,
+      link: "https://discord.com/blog/" + slug
     });
-  } catch (error) {
+  } catch (e) {
     res.status(500).json({
       status: "error",
-      message: error.message
+      message: e.message
     });
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Discord Blog API running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log("API running on " + PORT));
