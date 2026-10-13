@@ -1,7 +1,6 @@
 {
-  "name": "discord-blog-api",
+  "name": "discord-updates-api",
   "version": "1.0.0",
-  "description": "Discord blog updates API",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
