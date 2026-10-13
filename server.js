@@ -1,38 +1,67 @@
-const express = require("express");
-const app = express();
 
+const express = require("express");
+
+const app = express();
 const PORT = process.env.PORT || 10000;
 
 app.get("/", (req, res) => {
-  res.json({ status: "online" });
+  res.json({
+    status: "online",
+    service: "Discord Updates API"
+  });
 });
 
 app.get("/discord-updates", async (req, res) => {
   try {
-    const r = await fetch("https://discord.com/blog");
-    const html = await r.text();
+    const response = await fetch("https://discord.com/blog", {
+      headers: {
+        "User-Agent": "Mozilla/5.0"
+      }
+    });
 
-    const match = html.match(
-      /https:\/\/discord\.com\/blog\/([a-zA-Z0-9-]+)/
-    );
+    if (!response.ok) {
+      throw new Error("Discord blog returned HTTP " + response.status);
+    }
 
-    if (!match) {
-      return res.status(500).json({
+    const html = await response.text();
+
+    const matches = [
+      ...html.matchAll(
+        /https:\/\/discord\.com\/blog\/([a-zA-Z0-9-]+)/g
+      )
+    ];
+
+    const slug = matches
+      .map(match => match[1])
+      .find(value =>
+        value !== "category" &&
+        value !== "tag" &&
+        value !== "author"
+      );
+
+    if (!slug) {
+      return res.status(200).json({
         status: "error",
-        message: "No blog post found"
+        title: "No blog post found",
+        link: "https://discord.com/blog"
       });
     }
 
-    const slug = match[1];
+    const title = slug
+      .replace(/-/g, " ")
+      .replace(/\b\w/g, char => char.toUpperCase());
 
     res.json({
       status: "ok",
-      title: slug.replace(/-/g, " "),
-      link: "https://discord.com/blog/" + slug
+      title: title,
+      link: "https://discord.com/blog/" + slug,
+      message: "New Discord blog post released!"
     });
   } catch (error) {
-    res.status(500).json({
+    res.status(200).json({
       status: "error",
+      title: "Discord Blog",
+      link: "https://discord.com/blog",
       message: error.message
     });
   }
